@@ -39,7 +39,7 @@ class MarkdownParser {
     /// The parser used to convert syntax strings to attributed strings.
     ///
     private lazy var syntaxParser: MarkdownSyntaxParser = {
-        return MarkdownSyntaxParser(syntaxMap: self.syntaxMap)
+        return MarkdownSyntaxParser(style: self.style)
     }()
     
     /// The mapping between markdown types and their corresponding syntax.
