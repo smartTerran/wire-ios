@@ -80,6 +80,9 @@
 @interface ConversationInputBarViewController (ZMConversationObserver) <ZMConversationObserver>
 @end
 
+@interface ConversationInputBarViewController (ZMUserObserver) <ZMUserObserver>
+@end
+
 @interface ConversationInputBarViewController (ZMTypingChangeObserver) <ZMTypingChangeObserver>
 @end
 
@@ -137,12 +140,15 @@
 
 @property (nonatomic) NSSet *typingUsers;
 @property (nonatomic) id conversationObserverToken;
+@property (nonatomic) id userObserverToken;
 
 @property (nonatomic) UIViewController *inputController;
 
 @property (nonatomic) BOOL inRotation;
 
 @property (nonatomic) id typingObserverToken;
+
+@property (nonatomic) UINotificationFeedbackGenerator* feedbackGenerator;
 @end
 
 
@@ -161,6 +167,10 @@
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidHide:) name:UIKeyboardDidHideNotification object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];
+        
+        if (nil != [UINotificationFeedbackGenerator class]) {
+            self.feedbackGenerator = [[UINotificationFeedbackGenerator alloc] init];
+        }
     }
     return self;
 }
@@ -217,11 +227,16 @@
         self.conversationObserverToken = [ConversationChangeInfo addObserver:self forConversation:self.conversation];
     }
     
+    if (self.userObserverToken == nil && self.conversation.connectedUser != nil) {
+        self.userObserverToken = [UserChangeInfo addObserver:self forUser:self.conversation.connectedUser userSession:ZMUserSession.sharedSession];
+    }
+    
     [self updateAccessoryViews];
     [self updateInputBarVisibility];
     [self updateTypingIndicatorVisibility];
     [self updateWritingStateAnimated:NO];
     [self updateButtonIconsForEphemeral];
+    [self updateAvailabilityPlaceholder];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -440,6 +455,24 @@
     [self.typingIndicatorView autoPinEdgeToSuperviewEdge:ALEdgeRight withInset:48 relation:NSLayoutRelationGreaterThanOrEqual];
 }
 
+- (void)updateAvailabilityPlaceholder
+{
+    if (!ZMUser.selfUser.hasTeam || self.conversation.conversationType != ZMConversationTypeOneOnOne) {
+        return;
+    }
+    
+    Availability connectedUserAvailability = self.conversation.connectedUser.availability;
+    
+    if (connectedUserAvailability == AvailabilityNone) {
+        self.inputBar.availabilityPlaceholder = nil;
+    } else {
+        self.inputBar.availabilityPlaceholder = [AvailabilityStringBuilder stringFor:self.conversation.connectedUser
+                                                                                with:AvailabilityLabelStylePlaceholder
+                                                                               color:self.inputBar.placeholderColor];
+    }
+    
+}
+
 - (void)updateNewButtonTitleLabel
 {
     self.photoButton.titleLabel.hidden = self.inputBar.textView.isFirstResponder;
@@ -566,7 +599,7 @@
                                                 modifierFlags:0
                                                        action:@selector(escapePressed)
                                          discoverabilityTitle:NSLocalizedString(@"conversation.input_bar.shortcut.cancel_editing_message", nil)]];
-    } else {
+    } else if(self.inputBar.textView.text.length == 0) {
         [commands addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputUpArrow
                                                 modifierFlags:0
                                                        action:@selector(upArrowPressed)
@@ -1108,6 +1141,8 @@
             [Analytics.shared tagMediaActionCompleted:ConversationMediaActionPing inConversation:self.conversation];
             
             [AVSMediaManager.sharedInstance playSound:MediaManagerSoundOutgoingKnockSound];
+            
+            [self.feedbackGenerator notificationOccurred:UINotificationFeedbackTypeSuccess];
         }
     }];
     
@@ -1126,6 +1161,17 @@
 {    
     if (change.participantsChanged || change.connectionStateChanged) {
         [self updateInputBarVisibility];
+    }
+}
+
+@end
+
+@implementation ConversationInputBarViewController (ZMUserObserver)
+
+- (void)userDidChange:(UserChangeInfo *)changeInfo
+{
+    if (changeInfo.availabilityChanged) {
+        [self updateAvailabilityPlaceholder];
     }
 }
 
