@@ -1,35 +1,98 @@
 //
-//  MarkdownSyntaxParserTests.swift
-//  Wire-iOS-Tests
+// Wire
+// Copyright (C) 2018 Wire Swiss GmbH
 //
-//  Created by John Nguyen on 03.01.18.
-//  Copyright © 2018 Zeta Project Germany GmbH. All rights reserved.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see http://www.gnu.org/licenses/.
 //
 
 import XCTest
+@testable import Wire
 
 class MarkdownSyntaxParserTests: XCTestCase {
     
-    override func setUp() {
-        super.setUp()
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-    }
+    let sut = MarkdownSyntaxParser(style: MarkdownStyle())
     
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        super.tearDown()
-    }
+    // MARK: - Simple
     
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-    }
-    
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
+    func testThatItParses_Header() {
+        
+        let test: (String, String, [(Int, Markdown)]) -> Void = { input, expectedStr, markdownIndices in
+            // given
+            let syntaxString = NSMutableAttributedString(string: input)
+            
+            // when
+            let result = self.sut.parse(syntaxString)
+            
+            // then
+            XCTAssertEqual(result.string, expectedStr)
+            
+            markdownIndices.forEach {
+                let markdown = result.attribute(MarkdownAttributeName, at: $0, effectiveRange: nil) as? Markdown
+                XCTAssertEqual(markdown ?? .none, $1)
+            }
         }
+        
+        test("# Header\n", "Header\n", [(0, .header1)])
+        test("# Header\nNormal", "Header\nNormal", [(0, .header1), (7, .none)])
+        test("Normal\n# Header\nNormal", "Normal\nHeader\nNormal", [(0, .none), (7, .header1), (14, .none)])
+        
+        test("## Header\n", "Header\n", [(0, .header2)])
+        test("## Header\nNormal", "Header\nNormal", [(0, .header2), (7, .none)])
+        test("Normal\n## Header\nNormal", "Normal\nHeader\nNormal", [(0, .none), (7, .header2), (14, .none)])
+        
+        test("### Header\n", "Header\n", [(0, .header3)])
+        test("### Header\nNormal", "Header\nNormal", [(0, .header3), (7, .none)])
+        test("Normal\n### Header\nNormal", "Normal\nHeader\nNormal", [(0, .none), (7, .header3), (14, .none)])
     }
     
+    func testThatItParses_Bold() {
+        XCTFail()
+    }
+    
+    func testThatItParses_Italic() {
+        XCTFail()
+    }
+    
+    func testThatItParses_Code() {
+        XCTFail()
+    }
+    
+    // MARK: - Combined
+    
+    func testThatItParses_BoldItalic() {
+        XCTFail()
+    }
+    
+    func testThatItParses_Lists() {
+        XCTFail()
+    }
+    
+    func testThatItParses_ListsBold() {
+        XCTFail()
+    }
+    
+    func testThatItParses_ListsItalic() {
+        XCTFail()
+    }
+    
+    func testThatItParses_ListsCode() {
+        XCTFail()
+    }
+    
+    // MARK: - Mixed
+    
+    func testThatItParses_MultipleMarkdown() {
+        XCTFail()
+    }
 }
