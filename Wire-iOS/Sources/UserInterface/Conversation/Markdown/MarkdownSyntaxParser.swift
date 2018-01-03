@@ -27,45 +27,85 @@ class MarkdownSyntaxParser {
     private lazy var matchers: [Matcher] = {
         var result = [Matcher]()
         
-        var attrs = self.style.attributes(for: .header1)
-        result.append(Matcher(markdown: .header1, pattern: header1Pattern, options: .anchorsMatchLines, attributes: attrs))
+        let headerMatcher: (Int) -> Matcher = { level in
+            let pattern: String
+            let markdown: Markdown
+            
+            switch level {
+            case 1:
+                pattern = header1Pattern
+                markdown = .header1
+            case 2:
+                pattern = header2Pattern
+                markdown = .header2
+            default:
+                pattern = header3Pattern
+                markdown = .header3
+            }
+            
+            return Matcher(pattern: pattern, options: .anchorsMatchLines, stylingBlock: { attrStr, match in
+                guard match.numberOfRanges == 3 else { return }
+                let syntaxRange = match.rangeAt(1)
+                let contentRange = match.rangeAt(2)
+                attrStr.addAttribute(MarkdownAttributeName, value: Markdown.syntax, range: syntaxRange)
+                attrStr.setAttributes(self.style.attributes(for: markdown), range: contentRange)
+            })
+        }
         
-        attrs = self.style.attributes(for: .header2)
-        result.append(Matcher(markdown: .header2, pattern: header2Pattern, options: .anchorsMatchLines, attributes: attrs))
-        
-        attrs = self.style.attributes(for: .header3)
-        result.append(Matcher(markdown: .header3, pattern: header3Pattern, options: .anchorsMatchLines, attributes: attrs))
-        
-        attrs = self.style.attributes(for: .bold)
-        result.append(Matcher(markdown: .bold, pattern: boldPattern, options: .dotMatchesLineSeparators, attributes: attrs))
-        
-        attrs = self.style.attributes(for: .italic)
-        result.append(Matcher(markdown: .italic, pattern: italicPattern, options: .dotMatchesLineSeparators, attributes: attrs))
+        result = [headerMatcher(1), headerMatcher(2), headerMatcher(3)]
         
         return result 
     }()
     
     /// Returns an attributed string constructed by the given syntax string.
     ///
-    func parse(_ syntaxString: String) -> NSAttributedString {
-        return NSAttributedString(string: "")
+    func parse(_ syntaxString: NSMutableAttributedString) -> NSMutableAttributedString {
+        
+        matchers.forEach { $0.match(string: syntaxString) }
+        return stripSyntax(syntaxString)
+    }
+    
+    private func stripSyntax(_ string: NSMutableAttributedString) -> NSMutableAttributedString {
+        var ranges = [NSRange]()
+        let wholeRange = NSMakeRange(0, string.length)
+        
+        // get ranges of all syntax
+        string.enumerateAttribute(MarkdownAttributeName, in: wholeRange, options: .reverse) { val, range, _ in
+            if let markdown = val as? Markdown, markdown == .syntax {
+                ranges.append(range)
+            }
+        }
+        
+        // remove the syntax
+        ranges.forEach { string.replaceCharacters(in: $0, with: "") }
+        
+        return string
     }
 }
 
 private class Matcher {
     
-    let markdown: Markdown
     let regex: NSRegularExpression
-    let attributes: Attributes
+    let stylingBlock: (NSMutableAttributedString, NSTextCheckingResult) -> Void
     
-    init(markdown: Markdown, pattern: String, options: NSRegularExpression.Options, attributes: Attributes) {
-        self.markdown = markdown
-        self.attributes = attributes
+    init(pattern: String, options: NSRegularExpression.Options, stylingBlock: @escaping (NSMutableAttributedString, NSTextCheckingResult) -> Void) {
+        
+        self.stylingBlock = stylingBlock
         
         do {
             try self.regex = NSRegularExpression(pattern: pattern, options: options)
         } catch let error {
             fatal("Could not create Regular Expression: \(error.localizedDescription)")
+        }
+    }
+    
+    func match(string: NSMutableAttributedString) {
+        let wholeRange = NSMakeRange(0, string.length)
+        
+        regex.enumerateMatches(in: string.string, options: [], range: wholeRange) { match, flags, _ in
+            if let match = match {
+                self.stylingBlock(string, match)
+            }
         }
     }
 }

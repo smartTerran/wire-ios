@@ -22,7 +22,7 @@ import Foundation
 /// This class is repsonsible for the conversion between text containing
 /// style attributes and text containing markdown syntax.
 ///
-class MarkdownParser {
+class MarkdownParser: NSObject {
     
     typealias Syntax = (prefix: String, suffix: String)
     
@@ -64,7 +64,7 @@ class MarkdownParser {
     
     /// Returns an attributed string constructed by the given syntax string.
     ///
-    func parse(syntaxString: String) -> NSAttributedString {
+    func parse(syntaxString: NSMutableAttributedString) -> NSMutableAttributedString {
         return syntaxParser.parse(syntaxString)
     }
 }

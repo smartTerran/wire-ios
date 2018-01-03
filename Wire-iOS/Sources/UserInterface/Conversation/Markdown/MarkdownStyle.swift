@@ -36,6 +36,8 @@ struct Markdown: OptionSet, Hashable {
     static let list             = Markdown(rawValue: 1 << 6)
     static let listPrefix       = Markdown(rawValue: 1 << 7)
     
+    static let syntax           = Markdown(rawValue: 1 << 8)
+    
     // combined options
     
     static let boldItalic:      Markdown = [.bold, .italic]
