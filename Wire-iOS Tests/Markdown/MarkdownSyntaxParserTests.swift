@@ -23,41 +23,45 @@ class MarkdownSyntaxParserTests: XCTestCase {
     
     let sut = MarkdownSyntaxParser(style: MarkdownStyle())
     
+    func test(inputString: String, expectedString: String, markdownIndicies: [(Int, Markdown)]) {
+        // given
+        let syntaxString = NSMutableAttributedString(string: inputString)
+        
+        // when
+        let result = self.sut.parse(syntaxString)
+        
+        // then
+        XCTAssertEqual(result.string, expectedString)
+        
+        markdownIndicies.forEach {
+            let markdown = result.attribute(MarkdownAttributeName, at: $0, effectiveRange: nil) as? Markdown
+            XCTAssertEqual(markdown ?? .none, $1)
+        }
+    }
+    
     // MARK: - Simple
     
     func testThatItParses_Header() {
+        test(inputString: "# Header\n", expectedString: "Header\n", markdownIndicies: [(0, .header1)])
+        test(inputString: "# Header\nNormal", expectedString: "Header\nNormal", markdownIndicies: [(0, .header1), (7, .none)])
+        test(inputString: "Normal\n# Header\nNormal", expectedString: "Normal\nHeader\nNormal", markdownIndicies: [(0, .none), (7, .header1), (14, .none)])
         
-        let test: (String, String, [(Int, Markdown)]) -> Void = { input, expectedStr, markdownIndices in
-            // given
-            let syntaxString = NSMutableAttributedString(string: input)
-            
-            // when
-            let result = self.sut.parse(syntaxString)
-            
-            // then
-            XCTAssertEqual(result.string, expectedStr)
-            
-            markdownIndices.forEach {
-                let markdown = result.attribute(MarkdownAttributeName, at: $0, effectiveRange: nil) as? Markdown
-                XCTAssertEqual(markdown ?? .none, $1)
-            }
-        }
+        test(inputString: "## Header\n", expectedString: "Header\n", markdownIndicies: [(0, .header2)])
+        test(inputString: "## Header\nNormal", expectedString: "Header\nNormal", markdownIndicies: [(0, .header2), (7, .none)])
+        test(inputString: "Normal\n## Header\nNormal", expectedString: "Normal\nHeader\nNormal", markdownIndicies: [(0, .none), (7, .header2), (14, .none)])
         
-        test("# Header\n", "Header\n", [(0, .header1)])
-        test("# Header\nNormal", "Header\nNormal", [(0, .header1), (7, .none)])
-        test("Normal\n# Header\nNormal", "Normal\nHeader\nNormal", [(0, .none), (7, .header1), (14, .none)])
-        
-        test("## Header\n", "Header\n", [(0, .header2)])
-        test("## Header\nNormal", "Header\nNormal", [(0, .header2), (7, .none)])
-        test("Normal\n## Header\nNormal", "Normal\nHeader\nNormal", [(0, .none), (7, .header2), (14, .none)])
-        
-        test("### Header\n", "Header\n", [(0, .header3)])
-        test("### Header\nNormal", "Header\nNormal", [(0, .header3), (7, .none)])
-        test("Normal\n### Header\nNormal", "Normal\nHeader\nNormal", [(0, .none), (7, .header3), (14, .none)])
+        test(inputString: "### Header\n", expectedString: "Header\n", markdownIndicies: [(0, .header3)])
+        test(inputString: "### Header\nNormal", expectedString: "Header\nNormal", markdownIndicies: [(0, .header3), (7, .none)])
+        test(inputString: "Normal\n### Header\nNormal", expectedString: "Normal\nHeader\nNormal", markdownIndicies: [(0, .none), (7, .header3), (14, .none)])
     }
     
     func testThatItParses_Bold() {
-        XCTFail()
+        test(inputString: "**Bold**", expectedString: "Bold", markdownIndicies: [(0, .bold)])
+        test(inputString: "**Bold** Normal", expectedString: "Bold Normal", markdownIndicies: [(0, .bold), (4, .none)])
+        test(inputString: "**Bold** Normal **Bold**", expectedString: "Bold Normal Bold", markdownIndicies: [(0, .bold), (4, .none), (12, .bold)])
+        test(inputString: "Normal **Bold** Normal **Bold**", expectedString: "Normal Bold Normal Bold", markdownIndicies: [(0, .none), (7, .bold), (11, .none), (19, .bold)])
+        
+        test(inputString: "Normal **Bold** Normal*", expectedString: "Normal Bold Normal*", markdownIndicies: [(0, .none), (7,.bold), (11, .none)])
     }
     
     func testThatItParses_Italic() {
