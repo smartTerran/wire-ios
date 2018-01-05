@@ -31,10 +31,9 @@
 
 @import WireExtensionComponents;
 @import WireLinkPreview;
-@import Marklight;
 
 static NSMutableParagraphStyle *cellParagraphStyle;
-static MarklightGroupStyler *groupStyler;
+static MarkdownParser *markdownParser;
 
 
 
@@ -169,33 +168,11 @@ static inline NSDataDetector *linkDataDetector(void)
     
     [attributedString endEditing];
     
-    if (nil == groupStyler) {
-        // set markdown attribute styles here
-        ColorScheme *colorScheme = [ColorScheme defaultColorScheme];
-        MarklightStyle *style = [[MarklightStyle alloc] init];
-        style.hideSyntax = YES;
-        
-        style.syntaxAttributes = @{NSForegroundColorAttributeName: colorScheme.accentColor};
-        
-        NSMutableParagraphStyle * paragraphStyle = [[NSMutableParagraphStyle alloc] init];
-        paragraphStyle.paragraphSpacingBefore = 24.0;
-        paragraphStyle.paragraphSpacing = 12.0;
-        
-        UIFont *italicFont = [[UIFont systemFontOfSize:16.0 weight:UIFontWeightLight] italicFont];
-        style.italicAttributes = @{NSFontAttributeName: italicFont};
-        
-        NSMutableDictionary *h1HeaderAttributes = [[NSMutableDictionary alloc] initWithDictionary:style.h1HeadingAttributes];
-        [h1HeaderAttributes setValue:paragraphStyle forKey:NSParagraphStyleAttributeName];
-        style.h1HeadingAttributes = h1HeaderAttributes;
-        
-        NSMutableDictionary *codeAttributes = [[NSMutableDictionary alloc] initWithDictionary:style.codeAttributes];
-        [codeAttributes setValue:[colorScheme colorWithName: ColorSchemeColorTextForeground] forKey:NSForegroundColorAttributeName];
-        style.codeAttributes = codeAttributes;
-        groupStyler = [[MarklightGroupStyler alloc] initWithStyle: style];
+    if (nil == markdownParser) {
+        markdownParser = [[MarkdownParser alloc] init];
     }
     
-    // parse for markdown syntax & apply attributes
-    [groupStyler addMarkdownAttributes:attributedString editedRange: NSMakeRange(0, attributedString.length)];
+    attributedString = [markdownParser parseWithSyntaxString:attributedString];
     
     if ([attributedString.string wr_containsOnlyEmojiWithSpaces]) {
         [attributedString setAttributes:@{NSFontAttributeName: [UIFont systemFontOfSize:40]} range:NSMakeRange(0, attributedString.length)];
@@ -216,7 +193,7 @@ static inline NSDataDetector *linkDataDetector(void)
 
 + (void)invalidateMarkdownStyle
 {
-    groupStyler = nil;
+    markdownParser = nil;
 }
 
 + (NSArray *)linkAttachmentsForURLMatches:(NSArray *)matches
