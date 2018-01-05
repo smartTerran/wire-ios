@@ -180,3 +180,21 @@ class MarkdownStyle: NSObject {
     }
 }
 
+typealias Syntax = (prefix: String, suffix: String)
+
+class MarkdownSyntax: NSObject {
+    
+    func syntax(for markdown: Markdown) -> Syntax {
+        switch markdown {
+        case .header1:      return Syntax(prefix: "# ",    suffix: "")
+        case .header2:      return Syntax(prefix: "## ",   suffix: "")
+        case .header3:      return Syntax(prefix: "### ",  suffix: "")
+        case .bold:         return Syntax(prefix: "**",    suffix: "**")
+        case .italic:       return Syntax(prefix: "_",     suffix: "_")
+        case .boldItalic:   return Syntax(prefix:"**_",    suffix: "_**")
+        case .code:         return Syntax(prefix: "`",     suffix: "`")
+        default:            return Syntax(prefix: "",      suffix: "")
+        }
+    }
+}
+

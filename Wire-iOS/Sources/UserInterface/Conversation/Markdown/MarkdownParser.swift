@@ -30,6 +30,10 @@ class MarkdownParser: NSObject {
     ///
     var style = MarkdownStyle()
     
+    /// The syntax used to denote markdown attributes.
+    ///
+    var syntaxMap = MarkdownSyntax()
+    
     /// The parser used to convert attributed strings to syntax strings.
     ///
     private lazy var attributeParser: MarkdownAttributeParser = {
@@ -41,19 +45,6 @@ class MarkdownParser: NSObject {
     private lazy var syntaxParser: MarkdownSyntaxParser = {
         return MarkdownSyntaxParser(style: self.style)
     }()
-    
-    /// The mapping between markdown types and their corresponding syntax.
-    ///
-    private let syntaxMap: [Markdown : Syntax] = [
-        .none:          Syntax(prefix: "",      suffix: ""),
-        .header1:       Syntax(prefix: "# ",    suffix: ""),
-        .header2:       Syntax(prefix: "## ",   suffix: ""),
-        .header3:       Syntax(prefix: "### ",  suffix: ""),
-        .bold:          Syntax(prefix: "**",    suffix: "**"),
-        .italic:        Syntax(prefix: "_",     suffix: "_"),
-        .boldItalic:    Syntax(prefix:"**_",    suffix: "_**"),
-        .code:          Syntax(prefix: "`",     suffix: "`"),
-    ]
     
     /// Returns a string formatted with markdown syntax converted from the
     /// given attributed string.

@@ -18,9 +18,9 @@
 
 class MarkdownAttributeParser {
     
-    private let syntaxMap: [Markdown : MarkdownParser.Syntax]
+    private let syntaxMap: MarkdownSyntax
     
-    init(syntaxMap: [Markdown : MarkdownParser.Syntax]) {
+    init(syntaxMap: MarkdownSyntax) {
         self.syntaxMap = syntaxMap
     }
     
@@ -34,7 +34,7 @@ class MarkdownAttributeParser {
         
         let push: (Markdown, String) -> Void = { markdown, content in
             stack.append(markdown)
-            result += self.syntaxMap[markdown]?.prefix ?? ""
+            result += self.syntaxMap.syntax(for: markdown).prefix
             result += content
         }
         
@@ -44,7 +44,7 @@ class MarkdownAttributeParser {
             // TODO: need to check if it's a header, only insert newline if
             // one doesn't already exist.
             
-            result += self.syntaxMap[last]?.suffix ?? ""
+            result += self.syntaxMap.syntax(for: last).suffix
         }
         
         // Algorithm:
@@ -105,7 +105,7 @@ class MarkdownAttributeParser {
         
         // add any remaining suffix syntax
         while let markdown = stack.popLast() {
-            result += self.syntaxMap[markdown]?.suffix ?? ""
+            result += self.syntaxMap.syntax(for: markdown).suffix
         }
         
         return result
