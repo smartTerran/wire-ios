@@ -54,6 +54,30 @@ class MarkdownSyntaxParser {
         
         result = [headerMatcher(1), headerMatcher(2), headerMatcher(3)]
         
+        let boldMatcher = Matcher(pattern: boldPattern, stylingBlock: { attrStr, match in
+            guard match.numberOfRanges == 4 else { return }
+            let prefixSyntaxRange = match.rangeAt(1)
+            let contentRange = match.rangeAt(2)
+            let suffixSyntaxRange = match.rangeAt(3)
+            attrStr.addAttribute(MarkdownAttributeName, value: Markdown.syntax, range: prefixSyntaxRange)
+            attrStr.addAttribute(MarkdownAttributeName, value: Markdown.syntax, range: suffixSyntaxRange)
+            attrStr.setAttributes(self.style.attributes(for: .bold), range: contentRange)
+        })
+        
+        result.append(boldMatcher)
+        
+        let italicMatcher = Matcher(pattern: italicPattern, stylingBlock: { attrStr, match in
+            guard match.numberOfRanges == 4 else { return }
+            let prefixSyntaxRange = match.rangeAt(1)
+            let contentRange = match.rangeAt(2)
+            let suffixSyntaxRange = match.rangeAt(3)
+            attrStr.addAttribute(MarkdownAttributeName, value: Markdown.syntax, range: prefixSyntaxRange)
+            attrStr.addAttribute(MarkdownAttributeName, value: Markdown.syntax, range: suffixSyntaxRange)
+            attrStr.setAttributes(self.style.attributes(for: .italic), range: contentRange)
+        })
+        
+        result.append(italicMatcher)
+        
         return result 
     }()
     
@@ -87,6 +111,10 @@ private class Matcher {
     
     let regex: NSRegularExpression
     let stylingBlock: (NSMutableAttributedString, NSTextCheckingResult) -> Void
+    
+    convenience init(pattern: String, stylingBlock: @escaping (NSMutableAttributedString, NSTextCheckingResult) -> Void) {
+        self.init(pattern: pattern, options: [], stylingBlock: stylingBlock)
+    }
     
     init(pattern: String, options: NSRegularExpression.Options, stylingBlock: @escaping (NSMutableAttributedString, NSTextCheckingResult) -> Void) {
         
