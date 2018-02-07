@@ -33,7 +33,6 @@ final class ProfileHeaderView: UIView {
 
     private(set) var dismissButton = IconButton.iconButtonCircular()
     internal(set) var headerStyle: ProfileHeaderStyle
-    /// flag for disable headerStyle update in traitCollectionDidChange. It should be used for test only.
     private let navigationControllerViewControllerCount: Int?
     private let profileViewControllerContext: ProfileViewControllerContext?
 
